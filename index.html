@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In Loving Memory of Muhammed Hussein</title>
+<meta name="description" content="A memory wall for Muhammed Hussein. Share a message or a photo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#f7f5f0; --card:#ffffff; --field:#fbfaf7; --ink:#2b2a27; --muted:#8a857c;
+    --line:#e6e1d8; --line-strong:#cfc8bb; --danger:#a0463c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+  .hero{position:relative;height:33.333vh;height:33.333svh;min-height:220px;overflow:hidden}
+  .hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .9s ease}
+  .hero canvas.ready{opacity:1}
+  .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(to bottom,rgba(247,245,240,0),var(--bg));pointer-events:none}
+  header{text-align:center;padding:28px 0 44px}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+  h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;font-size:clamp(40px,7vw,64px);line-height:1.1;margin:0}
+  .divider{width:48px;height:1px;background:var(--line-strong);margin:28px auto}
+  .intro{color:var(--muted);margin:0}
+  .school{margin:12px 0 0;font-size:14px;letter-spacing:.04em;color:var(--muted)}
+  .lang{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding-top:18px;font-size:13px;color:var(--muted)}
+  .lang button{font:inherit;background:none;border:0;padding:4px 2px;color:var(--muted);cursor:pointer}
+  .lang button.active{color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+  .translate{display:none;font-size:13px;color:var(--muted);margin:-6px 0 14px;text-decoration:underline;text-underline-offset:3px}
+  body.lang-ms .translate{display:inline-block}
+
+  .composer{max-width:620px;margin:0 auto 64px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .field{margin-bottom:16px}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+  input[type=text],input[type=password],textarea{width:100%;font:inherit;color:inherit;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:12px 14px;outline:none;transition:border-color .15s}
+  input:focus,textarea:focus{border-color:var(--line-strong)}
+  textarea{min-height:130px;resize:vertical}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .file-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .previews{display:flex;gap:10px;flex-wrap:wrap}
+  .previews:not(:empty){margin-bottom:16px}
+  .preview{position:relative;width:78px;height:78px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .preview img{width:100%;height:100%;object-fit:cover;display:block}
+  .preview button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:15px;line-height:22px;cursor:pointer;padding:0}
+
+  .btn{font:inherit;font-size:15px;border:1px solid var(--ink);border-radius:999px;padding:10px 22px;background:var(--ink);color:#fff;cursor:pointer;transition:opacity .15s}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+  .status{font-size:14px;color:var(--muted);min-height:1.5em;margin:14px 0 0}
+  .status.error{color:var(--danger)}
+
+  .wall-head{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line);padding-top:28px;margin-bottom:24px}
+  h2{font-family:"Cormorant Garamond",Georgia,serif;font-weight:500;font-size:30px;margin:0}
+  .count{color:var(--muted);font-size:14px}
+  .wall{columns:3 300px;column-gap:20px}
+  .post{break-inside:avoid;display:inline-block;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 20px}
+  .photos{display:grid;gap:2px;grid-template-columns:1fr 1fr;background:var(--line)}
+  .photos img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;background:#efece6}
+  .photos.n1{grid-template-columns:1fr}
+  .photos.n1 img{height:auto;max-height:560px}
+  .photos.n2 img{aspect-ratio:1/1}
+  .photos.n3 img:first-child{grid-column:1/-1;aspect-ratio:16/10}
+  .photos.n3 img:not(:first-child){aspect-ratio:1/1}
+  .post-body{padding:18px 20px 16px}
+  .msg{margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+  .who{color:var(--ink);font-weight:500}
+  .del{display:none;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--danger);border-radius:999px;padding:3px 10px;cursor:pointer}
+  .del.confirm{background:var(--danger);border-color:var(--danger);color:#fff}
+  body.admin .del{display:inline-block}
+  .empty{text-align:center;color:var(--muted);padding:40px 0}
+
+  footer{text-align:center;padding:40px 0 64px;font-size:13px;color:var(--muted)}
+  .link{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
+
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+  .overlay.open{display:flex}
+  .lightbox{background:rgba(20,19,17,.92)}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:6px}
+  .lb-close{position:absolute;top:12px;right:16px;background:none;border:0;color:#fff;font-size:32px;line-height:1;cursor:pointer;padding:6px}
+  .modal{background:rgba(20,19,17,.35)}
+  .modal-card{background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:360px}
+  .modal-card h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:500;font-size:24px;margin:0 0 14px}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+
+  @media (max-width:600px){
+    header{padding:20px 0 32px}
+    .composer{padding:18px}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero" aria-hidden="true"><canvas id="heroCanvas"></canvas></div>
+
+<div class="wrap">
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="en">English</button>
+    <span aria-hidden="true">&middot;</span>
+    <button type="button" data-lang="ms">Bahasa Melayu</button>
+  </div>
+  <header>
+    <p class="eyebrow" data-i18n="eyebrow">In loving memory of</p>
+    <h1>Muhammed Hussein</h1>
+    <p class="school">Harvard Kennedy School</p>
+    <div class="divider"></div>
+    <p class="intro" data-i18n="intro">A place for his friends and classmates to share memories, messages, and photos.</p>
+  </header>
+
+  <form id="composer" class="composer" novalidate>
+    <div class="field">
+      <label for="name" data-i18n="name">Your name</label>
+      <input id="name" type="text" maxlength="80" autocomplete="name" required>
+    </div>
+    <div class="field">
+      <label for="message" data-i18n="message">Your message</label>
+      <textarea id="message" maxlength="5000" placeholder="Share a memory..." data-i18n-ph="placeholder"></textarea>
+    </div>
+    <div id="previews" class="previews"></div>
+    <div class="row">
+      <div>
+        <input id="photoInput" class="file-input" type="file" accept="image/*" multiple>
+        <button type="button" id="addPhotoBtn" class="btn btn-ghost" data-i18n="addPhotos">Add photos (up to 3)</button>
+      </div>
+      <button type="submit" id="submitBtn" class="btn" data-i18n="post">Post to the wall</button>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <section>
+    <div class="wall-head">
+      <h2 data-i18n="memories">Memories</h2>
+      <span id="count" class="count"></span>
+    </div>
+    <div id="wall" class="wall"></div>
+    <p id="empty" class="empty" hidden></p>
+  </section>
+
+  <footer id="footer">
+    <button type="button" id="manageBtn" class="link">Manage</button>
+  </footer>
+</div>
+
+<div id="lightbox" class="overlay lightbox" aria-hidden="true">
+  <button type="button" class="lb-close" aria-label="Close">&times;</button>
+  <img id="lbImg" alt="">
+</div>
+
+<div id="modal" class="overlay modal" aria-hidden="true">
+  <form id="adminForm" class="modal-card">
+    <h3>Manage posts</h3>
+    <label for="adminKey">Passcode</label>
+    <input id="adminKey" type="password" autocomplete="off">
+    <p id="adminStatus" class="status"></p>
+    <div class="modal-actions">
+      <button type="button" id="adminCancel" class="btn btn-ghost">Cancel</button>
+      <button type="submit" class="btn">Enter</button>
+    </div>
+  </form>
+</div>
+
+<script>
+/* ================= SETTINGS: fill these in before deploying ================= */
+const CONFIG = {
+  SUPABASE_URL: "https://raikvkvpfplhcselmhir.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_casz0jqPMr2HjOofjPcksg_Cz3K15-q",   // publishable key (safe to be public)
+  BUCKET: "memorial-photos",
+  HEADER_IMAGE_URL: ""                             // photo for the dotted header, e.g. "muhammed.jpg" placed next to this file. Empty = placeholder
+};
+/* ============================================================================ */
+
+const MAX_PHOTOS = 3;
+
+/* ---------- Language (English / Bahasa Melayu) ---------- */
+const I18N = {
+  en: {
+    title: "In Loving Memory of Muhammed Hussein",
+    eyebrow: "In loving memory of",
+    intro: "A place for his friends and classmates to share memories, messages, and photos.",
+    name: "Your name",
+    message: "Your message",
+    placeholder: "Share a memory...",
+    addPhotos: "Add photos (up to 3)",
+    post: "Post to the wall",
+    memories: "Memories",
+    countOne: "1 memory",
+    countMany: "{n} memories",
+    translate: "Translate to Malay",
+    maxPhotos: "You can add up to 3 photos.",
+    notConnected: "This page is not connected yet.",
+    needName: "Please add your name.",
+    needContent: "Please write a message or add a photo.",
+    posting: "Posting...",
+    uploading1: "Uploading photo...",
+    uploadingN: "Uploading photo {i} of {n}...",
+    thanks: "Thank you. Your memory has been added.",
+    error: "Something went wrong. Please try again.",
+    empty: "No memories yet. Be the first to share one.",
+    loadError: "Could not load the wall. Please refresh the page.",
+    photoBy: "Photo shared by {name}"
+  },
+  ms: {
+    title: "Dalam Kenangan Muhammed Hussein",
+    eyebrow: "Dalam kenangan",
+    intro: "Ruang untuk rakan-rakan dan rakan sekelasnya berkongsi kenangan, ucapan dan gambar.",
+    name: "Nama anda",
+    message: "Ucapan anda",
+    placeholder: "Kongsikan kenangan anda...",
+    addPhotos: "Tambah gambar (maksimum 3)",
+    post: "Kongsi",
+    memories: "Kenangan",
+    countOne: "1 kenangan",
+    countMany: "{n} kenangan",
+    translate: "Terjemah ke Bahasa Melayu",
+    maxPhotos: "Anda boleh menambah sehingga 3 gambar.",
+    notConnected: "Halaman ini belum disambungkan.",
+    needName: "Sila masukkan nama anda.",
+    needContent: "Sila tulis ucapan atau tambah gambar.",
+    posting: "Sedang menghantar...",
+    uploading1: "Sedang memuat naik gambar...",
+    uploadingN: "Sedang memuat naik gambar {i} daripada {n}...",
+    thanks: "Terima kasih. Kenangan anda telah ditambah.",
+    error: "Maaf, ada masalah. Sila cuba lagi.",
+    empty: "Belum ada kenangan. Jadilah yang pertama berkongsi.",
+    loadError: "Tidak dapat memuatkan kenangan. Sila muat semula halaman.",
+    photoBy: "Gambar dikongsi oleh {name}"
+  }
+};
+
+let lang = "";
+try { lang = localStorage.getItem("memorial_lang") || ""; } catch (e) {}
+if (!I18N[lang]) lang = (navigator.language || "").toLowerCase().startsWith("ms") ? "ms" : "en";
+
+function t(key, vars) {
+  let s = (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+  if (vars) for (const k in vars) s = s.split(`{${k}}`).join(String(vars[k]));
+  return s;
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.title = t("title");
+  document.body.classList.toggle("lang-ms", lang === "ms");
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+}
+
+document.querySelectorAll(".lang button").forEach((b) => {
+  b.addEventListener("click", () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem("memorial_lang", lang); } catch (e) {}
+    applyLang();
+    setStatus("");
+    renderWall();
+  });
+});
+
+applyLang();
+const $ = (s) => document.querySelector(s);
+const configured = !CONFIG.SUPABASE_URL.startsWith("PASTE") && !CONFIG.SUPABASE_ANON_KEY.startsWith("PASTE");
+const db = configured && window.supabase ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+
+let selected = [];
+let adminKey = null;
+try { adminKey = sessionStorage.getItem("memorial_admin_key"); } catch (e) {}
+
+
+function setStatus(text, isError) {
+  const s = $("#status");
+  s.textContent = text || "";
+  s.classList.toggle("error", !!isError);
+}
+
+function newId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+/* ---------- Photo picking ---------- */
+$("#addPhotoBtn").addEventListener("click", () => $("#photoInput").click());
+
+$("#photoInput").addEventListener("change", (e) => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+  let overLimit = false;
+  for (const f of files) {
+    if (f.type && !f.type.startsWith("image/")) continue;
+    if (selected.length >= MAX_PHOTOS) { overLimit = true; break; }
+    selected.push({ file: f, url: URL.createObjectURL(f) });
+  }
+  setStatus(overLimit ? t("maxPhotos") : "", overLimit);
+  renderPreviews();
+});
+
+function renderPreviews() {
+  const box = $("#previews");
+  box.innerHTML = "";
+  selected.forEach((item, i) => {
+    const d = document.createElement("div");
+    d.className = "preview";
+    const img = document.createElement("img");
+    img.src = item.url;
+    img.alt = "";
+    const x = document.createElement("button");
+    x.type = "button";
+    x.setAttribute("aria-label", "Remove photo");
+    x.textContent = "×";
+    x.addEventListener("click", () => {
+      URL.revokeObjectURL(item.url);
+      selected.splice(i, 1);
+      renderPreviews();
+    });
+    d.append(img, x);
+    box.append(d);
+  });
+  $("#addPhotoBtn").disabled = selected.length >= MAX_PHOTOS;
+}
+
+/* ---------- Posting ---------- */
+$("#composer").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!db) return setStatus(t("notConnected"), true);
+
+  const name = $("#name").value.trim();
+  const message = $("#message").value.trim();
+  if (!name) return setStatus(t("needName"), true);
+  if (!message && !selected.length) return setStatus(t("needContent"), true);
+
+  const btn = $("#submitBtn");
+  btn.disabled = true;
+  setStatus(t("posting"));
+
+  try {
+    const id = newId();
+    const paths = [];
+    for (let i = 0; i < selected.length; i++) {
+      const f = selected[i].file;
+      const m = f.name.match(/\.([a-z0-9]{1,5})$/i);
+      const ext = m ? m[1].toLowerCase() : "jpg";
+      const path = `${id}/${i + 1}.${ext}`;
+      setStatus(selected.length > 1 ? t("uploadingN", { i: i + 1, n: selected.length }) : t("uploading1"));
+      const { error } = await db.storage.from(CONFIG.BUCKET).upload(path, f, {
+        contentType: f.type || undefined,
+        upsert: false
+      });
+      if (error) throw error;
+      paths.push(path);
+    }
+
+    const { error } = await db.from("posts").insert({ id, name, message: message || null, photos: paths });
+    if (error) throw error;
+
+    $("#message").value = "";
+    selected.forEach((s) => URL.revokeObjectURL(s.url));
+    selected = [];
+    renderPreviews();
+    setStatus(t("thanks"));
+    await loadPosts();
+  } catch (err) {
+    console.error(err);
+    setStatus(t("error"), true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Wall ---------- */
+const PATH_OK = /^[0-9a-f-]{36}\/[1-3]\.[a-z0-9]{1,5}$/i;
+
+function photoUrl(path) {
+  return db.storage.from(CONFIG.BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+function showEmpty(text) {
+  const el = $("#empty");
+  el.textContent = text;
+  el.hidden = !text;
+}
+
+function setCount(n) {
+  $("#count").textContent = !n ? "" : n === 1 ? t("countOne") : t("countMany", { n });
+}
+
+let cachedPosts = null;
+
+function renderWall() {
+  if (!cachedPosts) return;
+  const wall = $("#wall");
+  wall.innerHTML = "";
+  cachedPosts.forEach((p) => wall.append(renderPost(p)));
+  setCount(cachedPosts.length);
+  showEmpty(cachedPosts.length ? "" : t("empty"));
+}
+
+async function loadPosts() {
+  if (!db) {
+    $("#wall").innerHTML = "";
+    setCount(0);
+    showEmpty("This page is not connected yet. Add the Supabase details in index.html.");
+    return;
+  }
+  const { data, error } = await db
+    .from("posts")
+    .select("id, created_at, name, message, photos")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    showEmpty(t("loadError"));
+    return;
+  }
+
+  cachedPosts = data;
+  renderWall();
+}
+
+function renderPost(p) {
+  const card = document.createElement("article");
+  card.className = "post";
+
+  const paths = (p.photos || []).filter((x) => PATH_OK.test(x)).slice(0, MAX_PHOTOS);
+  if (paths.length) {
+    const grid = document.createElement("div");
+    grid.className = `photos n${paths.length}`;
+    paths.forEach((path) => {
+      const img = document.createElement("img");
+      img.src = photoUrl(path);
+      img.alt = t("photoBy", { name: p.name });
+      img.loading = "lazy";
+      img.addEventListener("click", () => openLightbox(img.src, img.alt));
+      grid.append(img);
+    });
+    card.append(grid);
+  }
+
+  const body = document.createElement("div");
+  body.className = "post-body";
+
+  if (p.message) {
+    const msg = document.createElement("p");
+    msg.className = "msg";
+    msg.textContent = p.message;
+    body.append(msg);
+
+    const tr = document.createElement("a");
+    tr.className = "translate";
+    tr.href = "https://translate.google.com/?sl=auto&tl=ms&op=translate&text=" + encodeURIComponent(p.message);
+    tr.target = "_blank";
+    tr.rel = "noopener";
+    tr.textContent = t("translate");
+    body.append(tr);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const left = document.createElement("span");
+  const who = document.createElement("span");
+  who.className = "who";
+  who.textContent = p.name;
+  const date = new Date(p.created_at).toLocaleDateString(lang === "ms" ? "ms-MY" : undefined, { year: "numeric", month: "long", day: "numeric" });
+  left.append(who, document.createTextNode(` · ${date}`));
+
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "del";
+  del.textContent = "Delete";
+  let timer = null;
+  del.addEventListener("click", async () => {
+    if (!del.classList.contains("confirm")) {
+      del.classList.add("confirm");
+      del.textContent = "Confirm delete";
+      timer = setTimeout(() => { del.classList.remove("confirm"); del.textContent = "Delete"; }, 4000);
+      return;
+    }
+    clearTimeout(timer);
+    del.disabled = true;
+    const { data, error } = await db.rpc("delete_post", { p_post_id: p.id, p_key: adminKey });
+    if (error || !data) {
+      console.error(error);
+      del.disabled = false;
+      del.classList.remove("confirm");
+      del.textContent = "Delete failed";
+      return;
+    }
+    card.remove();
+    cachedPosts = (cachedPosts || []).filter((x) => x.id !== p.id);
+    setCount(cachedPosts.length);
+    if (!cachedPosts.length) showEmpty(t("empty"));
+  });
+
+  meta.append(left, del);
+  body.append(meta);
+  card.append(body);
+  return card;
+}
+
+/* ---------- Lightbox ---------- */
+function openLightbox(src, alt) {
+  $("#lbImg").src = src;
+  $("#lbImg").alt = alt;
+  $("#lightbox").classList.add("open");
+}
+function closeLightbox() {
+  $("#lightbox").classList.remove("open");
+  $("#lbImg").src = "";
+}
+$("#lightbox").addEventListener("click", (e) => { if (e.target.tagName !== "IMG") closeLightbox(); });
+
+/* ---------- Manage (delete) mode ---------- */
+function renderFooter() {
+  const f = $("#footer");
+  f.innerHTML = "";
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "link";
+  if (document.body.classList.contains("admin")) {
+    f.append(document.createTextNode("Manage mode on · "));
+    b.textContent = "Exit";
+    b.addEventListener("click", () => {
+      adminKey = null;
+      try { sessionStorage.removeItem("memorial_admin_key"); } catch (e) {}
+      document.body.classList.remove("admin");
+      renderFooter();
+    });
+  } else {
+    b.textContent = "Manage";
+    b.addEventListener("click", openModal);
+  }
+  f.append(b);
+}
+
+function openModal() {
+  $("#adminStatus").textContent = "";
+  $("#adminKey").value = "";
+  $("#modal").classList.add("open");
+  setTimeout(() => $("#adminKey").focus(), 50);
+}
+function closeModal() { $("#modal").classList.remove("open"); }
+
+$("#adminCancel").addEventListener("click", closeModal);
+$("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });
+
+$("#adminForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const key = $("#adminKey").value;
+  const st = $("#adminStatus");
+  if (!db) { st.textContent = "This page is not connected yet."; st.classList.add("error"); return; }
+  if (!key) return;
+  st.classList.remove("error");
+  st.textContent = "Checking...";
+  const { data, error } = await db.rpc("is_admin", { p_key: key });
+  if (error || !data) {
+    st.textContent = "Wrong passcode.";
+    st.classList.add("error");
+    return;
+  }
+  adminKey = key;
+  try { sessionStorage.setItem("memorial_admin_key", key); } catch (e) {}
+  document.body.classList.add("admin");
+  closeModal();
+  renderFooter();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closeLightbox(); closeModal(); }
+});
+
+/* ---------- Dotted header ---------- */
+(function dottedHero() {
+  const canvas = $("#heroCanvas");
+  const ctx = canvas.getContext("2d");
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#2b2a27";
+  const RADIUS = 90, PUSH = 1.6, SPRING = 0.06, DAMP = 0.82;
+  const pointer = { x: -9999, y: -9999, active: false };
+  let dots = [], W = 0, H = 0, source = null, raf = null;
+
+  // Placeholder: soft head-and-shoulders silhouette
+  function placeholder(w, h) {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, w, h);
+    const cx = w / 2;
+    const glow = g.createRadialGradient(cx, h * 0.6, 0, cx, h * 0.6, Math.max(w, h) * 0.55);
+    glow.addColorStop(0, "rgba(0,0,0,0.16)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = glow;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(0,0,0,0.78)";
+    g.beginPath(); g.ellipse(cx, h * 0.38, h * 0.15, h * 0.18, 0, 0, Math.PI * 2); g.fill();
+    g.fillRect(cx - h * 0.06, h * 0.5, h * 0.12, h * 0.14);
+    g.beginPath();
+    g.moveTo(cx - h * 0.42, h);
+    g.bezierCurveTo(cx - h * 0.4, h * 0.7, cx - h * 0.22, h * 0.6, cx, h * 0.6);
+    g.bezierCurveTo(cx + h * 0.22, h * 0.6, cx + h * 0.4, h * 0.7, cx + h * 0.42, h);
+    g.closePath(); g.fill();
+    return c;
+  }
+
+  // Draw the image (cover fit) into a tiny canvas: one pixel per dot
+  function sampleGrid(cols, rows) {
+    const c = document.createElement("canvas");
+    c.width = cols; c.height = rows;
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, cols, rows);
+    if (source) {
+      const iw = source.naturalWidth, ih = source.naturalHeight;
+      const scale = Math.max(cols / iw, rows / ih);
+      const dw = iw * scale, dh = ih * scale;
+      g.drawImage(source, (cols - dw) / 2, (rows - dh) * 0.35, dw, dh);
+    } else {
+      g.drawImage(placeholder(cols * 4, rows * 4), 0, 0, cols, rows);
+    }
+    return g.getImageData(0, 0, cols, rows).data;
+  }
+
+  function build() {
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    if (!W || !H) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const gap = W < 600 ? 6 : 8;
+    const cols = Math.ceil(W / gap), rows = Math.ceil(H / gap);
+    let data;
+    try { data = sampleGrid(cols, rows); }
+    catch (e) { console.warn("Header image blocked (CORS). Using placeholder.", e); source = null; data = sampleGrid(cols, rows); }
+
+    const maxR = gap * 0.5;
+    dots = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = (r * cols + c) * 4;
+        const lum = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+        const rad = maxR * Math.pow(1 - lum, 0.8);
+        if (rad < 0.35) continue;
+        const x = c * gap + gap / 2, y = r * gap + gap / 2;
+        dots.push({ hx: x, hy: y, x, y, vx: 0, vy: 0, r: rad });
+      }
+    }
+    draw();
+    canvas.classList.add("ready");
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    for (const d of dots) {
+      ctx.moveTo(d.x + d.r, d.y);
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+
+  function step() {
+    let moving = false;
+    const R2 = RADIUS * RADIUS;
+    for (const d of dots) {
+      if (pointer.active) {
+        const dx = d.x - pointer.x, dy = d.y - pointer.y;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 < R2 && dist2 > 0.01) {
+          const dist = Math.sqrt(dist2);
+          const f = 1 - dist / RADIUS;
+          d.vx += (dx / dist) * f * f * PUSH;
+          d.vy += (dy / dist) * f * f * PUSH;
+        }
+      }
+      d.vx = (d.vx + (d.hx - d.x) * SPRING) * DAMP;
+      d.vy = (d.vy + (d.hy - d.y) * SPRING) * DAMP;
+      d.x += d.vx;
+      d.y += d.vy;
+      if (Math.abs(d.vx) + Math.abs(d.vy) > 0.02 || Math.abs(d.x - d.hx) + Math.abs(d.y - d.hy) > 0.1) moving = true;
+      else { d.x = d.hx; d.y = d.hy; d.vx = 0; d.vy = 0; }
+    }
+    draw();
+    raf = moving || pointer.active ? requestAnimationFrame(step) : null;
+  }
+
+  function kick() {
+    if (!raf && !reduce) raf = requestAnimationFrame(step);
+  }
+
+  function setPointer(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = clientX - rect.left;
+    pointer.y = clientY - rect.top;
+    pointer.active = true;
+    kick();
+  }
+  function release() { pointer.active = false; kick(); }
+
+  canvas.addEventListener("mousemove", (e) => setPointer(e.clientX, e.clientY));
+  canvas.addEventListener("mouseleave", release);
+  canvas.addEventListener("touchstart", (e) => { const p = e.touches[0]; if (p) setPointer(p.clientX, p.clientY); }, { passive: true });
+  canvas.addEventListener("touchmove", (e) => { const p = e.touches[0]; if (p) setPointer(p.clientX, p.clientY); }, { passive: true });
+  canvas.addEventListener("touchend", release);
+  canvas.addEventListener("touchcancel", release);
+
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(build, 150);
+  });
+
+  const url = CONFIG.HEADER_IMAGE_URL;
+  if (!url) { build(); return; }
+  const img = new Image();
+  try { if (new URL(url, location.href).origin !== location.origin) img.crossOrigin = "anonymous"; } catch (e) {}
+  img.onload = () => { source = img; build(); };
+  img.onerror = () => { source = null; build(); };
+  img.src = url;
+})();
+
+/* ---------- Start ---------- */
+(async function init() {
+  if (db && adminKey) {
+    const { data } = await db.rpc("is_admin", { p_key: adminKey });
+    if (data) document.body.classList.add("admin");
+    else { adminKey = null; try { sessionStorage.removeItem("memorial_admin_key"); } catch (e) {} }
+  }
+  renderFooter();
+  loadPosts();
+})();
+</script>
+</body>
+</html>
